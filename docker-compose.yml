@@ -1,0 +1,13 @@
+
+services:
+  line-bot:
+    container_name: line-bot
+    build: .
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./app.py:/app/app.py  # 掛載本機的 app.py 到容器內
+      - ./requirements.txt:/app/requirements.txt  # 可選：確保依賴一致
+    env_file:
+      - .env
+    restart: always
