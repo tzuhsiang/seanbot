@@ -83,12 +83,13 @@ def handle_message(event):
     reply_text = f"你說了：{user_text}"
 
     try:
-        reply_message = ReplyMessageRequest(
-            reply_token=event.reply_token,
-            messages=[TextMessage(text=reply_text)]
+        messages = [TextMessage(text=reply_text)]
+        line_bot_api.reply_message_with_http_info(
+            ReplyMessageRequest(
+                reply_token=event.reply_token,
+                messages=messages
+            )
         )
-
-        line_bot_api.reply_message(reply_message)
         logger.info("成功回覆訊息")
     except Exception as e:
         logger.error(f"回覆訊息時發生錯誤: {e}", exc_info=True)
