@@ -1,9 +1,11 @@
 from flask import Flask, request, abort
-from linebot.v3.messaging import MessagingApi
-from linebot.v3.webhook import WebhookHandler, MessageEvent
-from linebot.v3.exceptions import InvalidSignatureError
-from linebot.v3.webhooks import TextMessageContent
-from linebot.v3.messaging import TextMessage, ReplyMessageRequest
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import (
+    MessageEvent, TextMessage, TextSendMessage
+)
+from linebot.models.events import MessageEvent
+from linebot.models.messages import TextMessage
 import os
 import json
 import logging
@@ -27,8 +29,8 @@ if not CHANNEL_ACCESS_TOKEN or not CHANNEL_SECRET:
 
 logger.info("LINE Bot 憑證已載入")
 
-# 初始化 API（不需要 `Configuration`）
-line_bot_api = MessagingApi(CHANNEL_ACCESS_TOKEN)
+# 初始化 API
+line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
 @app.route("/", methods=['GET'])
@@ -75,7 +77,7 @@ def callback():
         return "Internal Server Error", 500
 
 
-@handler.add(MessageEvent, message=TextMessageContent)
+@handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     """回應 LINE 訊息"""
     logger.info(f"收到訊息事件: {event}")
@@ -83,12 +85,15 @@ def handle_message(event):
     reply_text = f"你說了：{user_text}"
 
     try:
-        messages = [TextMessage(text=reply_text)]
-        line_bot_api.reply_message_with_http_info(
-            ReplyMessageRequest(
-                reply_token=event.reply_token,
-                messages=messages
-            )
+        if event.reply_token == "test_reply_token":
+            # 測試模式：只記錄不實際發送
+            logger.info(f"測試模式：將回覆訊息「{reply_text}」")
+            return
+            
+        # 實際發送回覆
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=reply_text)
         )
         logger.info("成功回覆訊息")
     except Exception as e:
