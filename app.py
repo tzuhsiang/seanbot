@@ -10,6 +10,8 @@ import os
 import json
 import logging
 
+import requests
+
 # 配置日誌
 logging.basicConfig(
     level=logging.INFO,
@@ -22,6 +24,11 @@ app = Flask(__name__)
 # 讀取環境變數
 CHANNEL_ACCESS_TOKEN = os.getenv("CHANNEL_ACCESS_TOKEN")
 CHANNEL_SECRET = os.getenv("CHANNEL_SECRET")
+
+# Langchain API 設定
+langchain_api_url = os.getenv("LANGCHAIN_API_URL")
+api_key = os.getenv("API_KEY")
+
 
 if not CHANNEL_ACCESS_TOKEN or not CHANNEL_SECRET:
     logger.error("未設置 LINE Bot 憑證！")
@@ -82,7 +89,18 @@ def handle_message(event):
     """回應 LINE 訊息"""
     logger.info(f"收到訊息事件: {event}")
     user_text = event.message.text
-    reply_text = f"你說了：{user_text}"
+
+    #呼叫Langflow的AI API
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    data = {
+        "input_value": user_text
+    }
+
+    # 發送請求
+    response = requests.post(langchain_api_url, headers=headers, json=data)
+    response.raise_for_status()  # 若發生錯誤會觸發例外
+    reply_text = f"{response.json()['outputs'][0]['outputs'][0]['results']['message'].get("text", "無法獲取對話")}"
+
 
     try:
         if event.reply_token == "test_reply_token":
