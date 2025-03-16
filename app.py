@@ -4,8 +4,6 @@ from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage
 )
-from linebot.models.events import MessageEvent
-from linebot.models.messages import TextMessage
 import os
 import json
 import logging
@@ -98,8 +96,13 @@ def handle_message(event):
 
     # 發送請求
     response = requests.post(langchain_api_url, headers=headers, json=data)
-    response.raise_for_status()  # 若發生錯誤會觸發例外
-    reply_text = f"{response.json()['outputs'][0]['outputs'][0]['results']['message'].get("text", "無法獲取對話")}"
+    try:
+        response.raise_for_status()  # 若發生錯誤會觸發例外
+        result = response.json()
+        reply_text = result['outputs'][0]['outputs'][0]['results']['message'].get('text', '無法獲取對話')
+    except Exception as e:
+        logger.error(f"Langflow API 錯誤: {e}")
+        reply_text = "抱歉，我現在無法正確處理您的訊息"
 
 
     try:
